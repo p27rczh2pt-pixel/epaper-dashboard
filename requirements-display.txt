@@ -1,0 +1,22 @@
+# Extra deps for the poller/render script that runs on the Pi Zero
+# and talks to the Waveshare e-paper HAT. Not needed to just run the
+# Flask API or use `poller.py --preview`.
+-r requirements.txt
+Pillow==10.4.0
+spidev==3.6
+gpiozero==2.0.1
+# gpiozero needs a pin factory backend — lgpio (RPi.GPIO/pigpio also work
+# but aren't packaged for aarch64/Debian 13 the same way). lgpio has no
+# PyPI wheel for this platform and fails to build from source (needs
+# swig), so it must come from apt as `python3-lgpio`, which only
+# system-site-packages venvs can see:
+#
+#   sudo apt install -y python3-lgpio
+#   python3 -m venv --system-site-packages .venv   # NOT a plain `venv`
+#
+# Without this, gpiozero silently falls back to its "experimental"
+# NativeFactory backend, which uses the legacy /sys/class/gpio sysfs
+# interface — and that interface doesn't work at all on this Pi's kernel
+# (Debian 13 / trixie), so display pushes fail with an OSError from deep
+# inside gpiozero. Confirmed on a real Pi Zero 2 W: NativeFactory does not
+# work here; lgpio via --system-site-packages does.

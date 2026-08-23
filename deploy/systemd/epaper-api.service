@@ -1,0 +1,15 @@
+[Unit]
+Description=Epaper Dashboard Flask API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=warwagen
+WorkingDirectory=/home/warwagen/epaper-dashboard
+ExecStart=/home/warwagen/epaper-dashboard/.venv/bin/python /home/warwagen/epaper-dashboard/run.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
