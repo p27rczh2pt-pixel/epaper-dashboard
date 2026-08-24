@@ -21,8 +21,9 @@ class Config:
 
     EXTERNAL_IP_API_URL = os.environ.get("EXTERNAL_IP_API_URL", "https://ipapi.co/json/")
     EXTERNAL_IP_TIMEOUT = float(os.environ.get("EXTERNAL_IP_TIMEOUT", "5"))
-    # IP/ISP rarely change; cache to avoid hammering the free API on every poll.
-    EXTERNAL_IP_CACHE_TTL = float(os.environ.get("EXTERNAL_IP_CACHE_TTL", "3600"))
+    # IP/ISP rarely change; cache well beyond the poll interval since the free
+    # API (ipapi.co) has a low daily quota and returns 429s once it's hit.
+    EXTERNAL_IP_CACHE_TTL = float(os.environ.get("EXTERNAL_IP_CACHE_TTL", "86400"))
 
     # Pi Zero's own system health
     SYSTEM_DISK_PATH = os.environ.get("SYSTEM_DISK_PATH", "/")
