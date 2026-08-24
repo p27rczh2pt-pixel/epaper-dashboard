@@ -424,7 +424,7 @@ def render_dashboard(data: dict) -> Image.Image:
 
     pihole_stats = data.get("pihole_stats", {})
 
-    _draw_pihole_panel(image, draw, (right_x0, top_y0, right_x1, top_y1), fonts, pihole_stats)
+    _draw_pihole_panel(image, draw, (left_x0, bottom_y0, left_x0 + panel_width, bottom_y1), fonts, pihole_stats)
     _draw_network_panel(
         image,
         draw,
@@ -434,7 +434,7 @@ def render_dashboard(data: dict) -> Image.Image:
         pihole_stats.get("new_devices"),
     )
     _draw_pihole_health_panel(
-        image, draw, (left_x0, bottom_y0, left_x0 + panel_width, bottom_y1), fonts, data.get("pihole_health", {})
+        image, draw, (right_x0, top_y0, right_x1, top_y1), fonts, data.get("pihole_health", {})
     )
     _draw_system_panel(
         image, draw, (right_x0, bottom_y0, right_x1, bottom_y1), fonts, data.get("system_health", {})
