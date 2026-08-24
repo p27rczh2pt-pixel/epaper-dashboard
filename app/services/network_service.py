@@ -9,6 +9,8 @@ _STATS_RE = re.compile(
     r"(?P<loss>[\d.]+)% packet loss"
 )
 _RTT_RE = re.compile(r"rtt min/avg/max/mdev = (?P<min>[\d.]+)/(?P<avg>[\d.]+)/(?P<max>[\d.]+)/(?P<mdev>[\d.]+)")
+_TIME_OFFSET_RE = re.compile(r"Offset:\s*(?P<value>[+-]?[\d.]+)(?P<unit>us|ms|s)\b")
+_TIME_OFFSET_MS_PER_UNIT = {"us": 0.001, "ms": 1.0, "s": 1000.0}
 
 # IP/ISP barely change; module-level cache so we don't hit the free API on
 # every poll (and don't get rate-limited).
@@ -49,7 +51,54 @@ def ping_host(host, count=5, timeout=5):
     }
 
 
+def get_time_sync_status(timeout=5):
+    """
+    Uses timedatectl rather than talking to chrony/systemd-timesyncd
+    directly, since timedatectl reports whichever of the two is actually
+    active (the Pi runs systemd-timesyncd; chrony isn't installed) via one
+    consistent interface.
+    """
+    try:
+        synced_result = subprocess.run(
+            ["timedatectl", "show", "--property=NTPSynchronized", "--value"],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except FileNotFoundError as exc:
+        raise NetworkError("timedatectl not found on this system") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise NetworkError("timedatectl status check timed out") from exc
+
+    if synced_result.returncode != 0:
+        raise NetworkError(
+            f"timedatectl exited {synced_result.returncode}: "
+            f"{synced_result.stderr.strip() or synced_result.stdout.strip()}"
+        )
+
+    offset_ms = None
+    try:
+        status_result = subprocess.run(
+            ["timedatectl", "timesync-status"],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        match = _TIME_OFFSET_RE.search(status_result.stdout)
+        if match:
+            offset_ms = round(float(match.group("value")) * _TIME_OFFSET_MS_PER_UNIT[match.group("unit")], 3)
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass  # offset is a nice-to-have; sync status above is the source of truth
+
+    return {"synced": synced_result.stdout.strip() == "yes", "offset_ms": offset_ms}
+
+
 def get_external_ip_info(api_url, timeout=5, cache_ttl=3600, force_refresh=False):
+    """
+    Expects ip-api.com's response shape ({"status": "success"|"fail", "query": ip,
+    "isp", "city", "regionName", "country", ...}) — swapped from ipapi.co, whose
+    free tier has a much lower daily quota and started 429ing under normal use.
+    """
     now = time.monotonic()
     cached = _external_ip_cache["data"]
     if not force_refresh and cached and (now - _external_ip_cache["fetched_at"]) < cache_ttl:
@@ -59,12 +108,15 @@ def get_external_ip_info(api_url, timeout=5, cache_ttl=3600, force_refresh=False
     resp.raise_for_status()
     payload = resp.json()
 
+    if payload.get("status") == "fail":
+        raise requests.RequestException(payload.get("message") or "external IP lookup failed")
+
     data = {
-        "ip": payload.get("ip"),
-        "isp": payload.get("org"),
+        "ip": payload.get("query"),
+        "isp": payload.get("isp"),
         "city": payload.get("city"),
-        "region": payload.get("region"),
-        "country": payload.get("country_name"),
+        "region": payload.get("regionName"),
+        "country": payload.get("country"),
     }
     _external_ip_cache["data"] = data
     _external_ip_cache["fetched_at"] = now
@@ -77,7 +129,7 @@ def get_network_health(app_config):
     `error` field on failure, so a flaky external IP API doesn't blank out
     otherwise-good ping stats (and vice versa).
     """
-    result = {"ping": None, "external_ip": None}
+    result = {"ping": None, "external_ip": None, "time_sync": None}
 
     try:
         result["ping"] = ping_host(
@@ -87,6 +139,11 @@ def get_network_health(app_config):
         )
     except NetworkError as exc:
         result["ping"] = {"error": str(exc)}
+
+    try:
+        result["time_sync"] = get_time_sync_status(timeout=app_config["TIME_SYNC_TIMEOUT"])
+    except NetworkError as exc:
+        result["time_sync"] = {"error": str(exc)}
 
     try:
         result["external_ip"] = get_external_ip_info(

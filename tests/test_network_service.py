@@ -21,6 +21,21 @@ PING_OUTPUT_LOSS = """PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
 5 packets transmitted, 0 received, 100% packet loss, time 4089ms
 """
 
+TIMESYNC_STATUS_OUTPUT = """       Server: 74.208.90.90 (2.debian.pool.ntp.org)
+Poll interval: 34min 8s (min: 32s; max 34min 8s)
+         Leap: normal
+      Version: 4
+      Stratum: 3
+    Reference: D8E50445
+    Precision: 1us (-21)
+Root distance: 36.796ms (max: 5s)
+       Offset: +1.329ms
+        Delay: 26.688ms
+       Jitter: 17.275ms
+ Packet count: 19
+    Frequency: -2.245ppm
+"""
+
 
 @pytest.fixture(autouse=True)
 def _reset_ip_cache():
@@ -57,10 +72,47 @@ def test_ping_host_missing_binary_raises(mock_run):
         ping_host("1.1.1.1")
 
 
+@patch("app.services.network_service.subprocess.run")
+def test_get_time_sync_status_synced_with_offset(mock_run):
+    mock_run.side_effect = [
+        MagicMock(stdout="yes\n", stderr="", returncode=0),
+        MagicMock(stdout=TIMESYNC_STATUS_OUTPUT, stderr="", returncode=0),
+    ]
+
+    result = network_service.get_time_sync_status()
+
+    assert result == {"synced": True, "offset_ms": 1.329}
+
+
+@patch("app.services.network_service.subprocess.run")
+def test_get_time_sync_status_not_synced(mock_run):
+    mock_run.side_effect = [
+        MagicMock(stdout="no\n", stderr="", returncode=0),
+        MagicMock(stdout="", stderr="", returncode=1),
+    ]
+
+    result = network_service.get_time_sync_status()
+
+    assert result["synced"] is False
+
+
+@patch("app.services.network_service.subprocess.run", side_effect=FileNotFoundError)
+def test_get_time_sync_status_missing_binary_raises(mock_run):
+    with pytest.raises(NetworkError):
+        network_service.get_time_sync_status()
+
+
 @patch("app.services.network_service.requests.get")
 def test_external_ip_info_is_cached(mock_get):
     mock_get.return_value = MagicMock(
-        json=lambda: {"ip": "1.2.3.4", "org": "Example ISP", "city": "Nowhere", "region": "NA", "country_name": "US"}
+        json=lambda: {
+            "status": "success",
+            "query": "1.2.3.4",
+            "isp": "Example ISP",
+            "city": "Nowhere",
+            "regionName": "Nowhereland",
+            "country": "US",
+        }
     )
     mock_get.return_value.raise_for_status = MagicMock()
 
@@ -68,8 +120,18 @@ def test_external_ip_info_is_cached(mock_get):
     second = network_service.get_external_ip_info("http://fake", timeout=5, cache_ttl=3600)
 
     assert first == second
+    assert first["ip"] == "1.2.3.4"
     assert first["isp"] == "Example ISP"
     mock_get.assert_called_once()
+
+
+@patch("app.services.network_service.requests.get")
+def test_external_ip_info_status_fail_raises(mock_get):
+    mock_get.return_value = MagicMock(json=lambda: {"status": "fail", "message": "private range"})
+    mock_get.return_value.raise_for_status = MagicMock()
+
+    with pytest.raises(requests.RequestException):
+        network_service.get_external_ip_info("http://fake", timeout=5, cache_ttl=3600)
 
 
 @patch("app.services.network_service.requests.get", side_effect=requests.RequestException("boom"))
@@ -81,6 +143,7 @@ def test_get_network_health_reports_partial_failure(mock_run, mock_get):
         "NETWORK_PING_HOST": "1.1.1.1",
         "NETWORK_PING_COUNT": 2,
         "NETWORK_PING_TIMEOUT": 5,
+        "TIME_SYNC_TIMEOUT": 5,
         "EXTERNAL_IP_API_URL": "http://fake",
         "EXTERNAL_IP_TIMEOUT": 5,
         "EXTERNAL_IP_CACHE_TTL": 3600,

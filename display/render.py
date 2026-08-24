@@ -268,6 +268,21 @@ def _draw_network_panel(image, draw, box, fonts, health, new_devices):
                 draw.text((x, y), _truncate(draw, location, fonts.small, right - x), font=fonts.small, fill=INK)
             y += 21
 
+        time_sync = health.get("time_sync") or {}
+        if "error" in time_sync:
+            draw.text((x, y), "Time Sync: unavailable", font=fonts.small, fill=INK)
+            y += 19
+        elif time_sync.get("synced") is False:
+            y = _draw_banner(draw, x, y, right, "! Time NOT synced", fonts.panel_title)
+        elif "synced" in time_sync:
+            offset = time_sync.get("offset_ms")
+            label = f"Time Sync: OK ({offset:+.1f}ms)" if isinstance(offset, (int, float)) else "Time Sync: OK"
+            draw.text((x, y), label, font=fonts.small, fill=INK)
+            y += 19
+        else:
+            draw.text((x, y), "Time Sync: —", font=fonts.small, fill=INK)
+            y += 19
+
     if new_devices is None:
         draw.text((x, y), "New devices: —", font=fonts.small, fill=INK)
     elif new_devices.get("new_count"):

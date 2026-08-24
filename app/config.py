@@ -18,8 +18,12 @@ class Config:
     NETWORK_PING_HOST = os.environ.get("NETWORK_PING_HOST", "1.1.1.1")
     NETWORK_PING_COUNT = int(os.environ.get("NETWORK_PING_COUNT", "5"))
     NETWORK_PING_TIMEOUT = float(os.environ.get("NETWORK_PING_TIMEOUT", "5"))
+    TIME_SYNC_TIMEOUT = float(os.environ.get("TIME_SYNC_TIMEOUT", "5"))
 
-    EXTERNAL_IP_API_URL = os.environ.get("EXTERNAL_IP_API_URL", "https://ipapi.co/json/")
+    # ip-api.com's free tier (~45 req/min, no key) — swapped from ipapi.co,
+    # whose free daily quota was getting exhausted and 429ing. No HTTPS on
+    # the free tier; the payload is just public IP geolocation, not sensitive.
+    EXTERNAL_IP_API_URL = os.environ.get("EXTERNAL_IP_API_URL", "http://ip-api.com/json/")
     EXTERNAL_IP_TIMEOUT = float(os.environ.get("EXTERNAL_IP_TIMEOUT", "5"))
     # IP/ISP rarely change; cache well beyond the poll interval since the free
     # API (ipapi.co) has a low daily quota and returns 429s once it's hit.

@@ -28,6 +28,7 @@ FULL_DATA = {
             "rtt_avg_ms": 10.6,
         },
         "external_ip": {"ip": "1.2.3.4", "isp": "Example ISP", "city": "Nowhere", "region": "NA", "country": "US"},
+        "time_sync": {"synced": True, "offset_ms": 1.3},
     },
     "system_health": {
         "cpu_temp_celsius": 20.0,
@@ -39,7 +40,11 @@ FULL_DATA = {
 DEGRADED_DATA = {
     "pihole_stats": {"error": "pihole_unreachable", "message": "401 Client Error"},
     "pihole_health": {"error": "pihole_unreachable", "message": "timed out"},
-    "network_health": {"ping": {"error": "ping to 1.1.1.1 timed out"}, "external_ip": {"error": "429 rate limited"}},
+    "network_health": {
+        "ping": {"error": "ping to 1.1.1.1 timed out"},
+        "external_ip": {"error": "429 rate limited"},
+        "time_sync": {"error": "timedatectl not found on this system"},
+    },
     "system_health": {"cpu_temp_celsius": None, "uptime_seconds": None, "disk": None},
 }
 
@@ -83,6 +88,13 @@ def test_render_dashboard_with_new_device_badge_does_not_overflow():
         "known_count": 14,
         "baseline_seeded": False,
     }
+    image = render_dashboard(data)
+    assert image.size == (WIDTH, HEIGHT)
+
+
+def test_render_dashboard_with_time_not_synced_does_not_overflow():
+    data = copy.deepcopy(FULL_DATA)
+    data["network_health"]["time_sync"] = {"synced": False, "offset_ms": None}
     image = render_dashboard(data)
     assert image.size == (WIDTH, HEIGHT)
 
