@@ -117,7 +117,9 @@ def _draw_header(draw, fonts):
         corners=(False, False, True, True),
         fill=INK,
     )
-    draw.text((MARGIN, 7), "LookingGlass", font=fonts.title, fill=PAPER)
+    title = "LookingGlass"
+    tw = draw.textlength(title, font=fonts.title)
+    draw.text(((WIDTH - tw) / 2, 7), title, font=fonts.title, fill=PAPER)
 
     timestamp = datetime.now().strftime("%a %b %d  %H:%M")
     tw = draw.textlength(timestamp, font=fonts.body)
