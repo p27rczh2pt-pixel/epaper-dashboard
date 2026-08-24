@@ -28,6 +28,7 @@ HEADER_HEIGHT = 40
 PANEL_GAP = 8
 PANEL_PAD = 10
 TITLE_BAR_HEIGHT = 26
+CORNER_RADIUS = 10
 
 _FONT_DIR = os.path.join(os.path.dirname(__file__), "fonts")
 _FONT_REGULAR = os.path.join(_FONT_DIR, "DejaVuSans.ttf")
@@ -153,24 +154,33 @@ def _draw_corner_icon(image, box, name):
 
 def _draw_panel_frame(draw, box, title, fonts):
     x0, y0, x1, y1 = box
-    draw.rectangle([x0, y0, x1, y1], outline=INK, width=2)
-    draw.rectangle([x0, y0, x1, y0 + TITLE_BAR_HEIGHT], fill=INK)
+    draw.rounded_rectangle([x0, y0, x1, y1], radius=CORNER_RADIUS, outline=INK, width=2)
+    draw.rounded_rectangle(
+        [x0, y0, x1, y0 + TITLE_BAR_HEIGHT],
+        radius=CORNER_RADIUS,
+        corners=(True, True, False, False),
+        fill=INK,
+    )
     draw.text((x0 + PANEL_PAD, y0 + 4), title, font=fonts.panel_title, fill=PAPER)
     return x0 + PANEL_PAD, y0 + TITLE_BAR_HEIGHT + 8, x1 - PANEL_PAD
 
 
 def _draw_bar(draw, x, y, width, height, fraction):
     fraction = 0.0 if not isinstance(fraction, (int, float)) else max(0.0, min(1.0, fraction))
-    draw.rectangle([x, y, x + width, y + height], outline=INK, width=1)
+    radius = height // 2
+    draw.rounded_rectangle([x, y, x + width, y + height], radius=radius, outline=INK, width=1)
     filled = int(width * fraction)
     if filled > 0:
-        draw.rectangle([x, y, x + filled, y + height], fill=INK)
+        # Radius can't exceed half the filled width, or PIL's rounded_rectangle
+        # errors out on a box too small to fit the requested corner radius.
+        fill_radius = min(radius, filled // 2)
+        draw.rounded_rectangle([x, y, x + filled, y + height], radius=fill_radius, fill=INK)
 
 
 def _draw_banner(draw, x, y, right, text, font, pad=3):
     """Inverted call-out (INK fill, PAPER text) — same visual language as the panel title bars."""
     height = font.size + pad * 2
-    draw.rectangle([x - pad, y - pad, right, y + height - pad], fill=INK)
+    draw.rounded_rectangle([x - pad, y - pad, right, y + height - pad], radius=CORNER_RADIUS // 2, fill=INK)
     draw.text((x, y), text, font=font, fill=PAPER)
     return y + height + 4
 
