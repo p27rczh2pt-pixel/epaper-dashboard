@@ -109,7 +109,14 @@ def _truncate(draw, text, font, max_width):
 # --- layout primitives -----------------------------------------------------
 
 def _draw_header(draw, fonts):
-    draw.rectangle([0, 0, WIDTH, HEADER_HEIGHT], fill=INK)
+    # Top corners stay square (flush against the physical screen edge);
+    # only the bottom corners round, same as a card meeting an edge.
+    draw.rounded_rectangle(
+        [0, 0, WIDTH, HEADER_HEIGHT],
+        radius=CORNER_RADIUS,
+        corners=(False, False, True, True),
+        fill=INK,
+    )
     draw.text((MARGIN, 7), "LookingGlass", font=fonts.title, fill=PAPER)
 
     timestamp = datetime.now().strftime("%a %b %d  %H:%M")
