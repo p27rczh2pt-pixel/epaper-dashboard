@@ -41,3 +41,8 @@ class Config:
     # New device detection (see app/services/device_tracker.py) — persisted
     # to disk (not in-memory) so it survives Flask restarts/reboots.
     DEVICE_KNOWN_FILE = os.environ.get("DEVICE_KNOWN_FILE", os.path.join(BASE_DIR, "data", "known_devices.json"))
+
+    # Pi-hole memory usage history, for the dashboard's sparkline (see
+    # app/services/memory_history.py). 36 samples at the poller's 10-minute
+    # interval covers a 6-hour window.
+    PIHOLE_MEM_HISTORY_SIZE = int(os.environ.get("PIHOLE_MEM_HISTORY_SIZE", "36"))

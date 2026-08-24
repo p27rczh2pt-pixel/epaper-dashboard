@@ -18,7 +18,12 @@ FULL_DATA = {
         "traffic_anomaly": {"queries_per_min": 12.0, "baseline_qpm": 10.0, "is_anomaly": False, "reason": None},
         "new_devices": {"new_count": 0, "new_devices": [], "known_count": 12, "baseline_seeded": False},
     },
-    "pihole_health": {"cpu_load_percent": [1.1, 1.04, 0.1], "memory_percent_used": 3.1, "uptime_seconds": 1326137},
+    "pihole_health": {
+        "cpu_load_percent": [1.1, 1.04, 0.1],
+        "memory_percent_used": 3.1,
+        "uptime_seconds": 1326137,
+        "memory_history": [2.8, 2.9, 3.0, 3.4, 3.2, 3.1, 3.6, 3.5, 3.1],
+    },
     "network_health": {
         "ping": {
             "host": "1.1.1.1",

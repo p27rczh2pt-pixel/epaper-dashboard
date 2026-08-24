@@ -1,6 +1,6 @@
 from flask import current_app, g
 
-from app.services import anomaly_service, device_tracker
+from app.services import anomaly_service, device_tracker, memory_history
 from app.services.pihole_client import PiholeClient
 from app.utils.data import dig
 
@@ -80,11 +80,13 @@ def get_pihole_system_health():
     """Memory/load/uptime of the Pi-hole host itself, via /api/info/system."""
     client = get_client()
     info = client.get_system_info()
+    memory_percent_used = dig(info, "system", "memory", "ram", "%used")
 
     return {
         "cpu_load_percent": dig(info, "system", "cpu", "load", "percent"),
-        "memory_percent_used": dig(info, "system", "memory", "ram", "%used"),
+        "memory_percent_used": memory_percent_used,
         "uptime_seconds": dig(info, "system", "uptime"),
+        "memory_history": memory_history.get_tracker().record(memory_percent_used),
     }
 
 

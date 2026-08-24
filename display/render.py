@@ -177,6 +177,37 @@ def _draw_bar(draw, x, y, width, height, fraction):
         draw.rounded_rectangle([x, y, x + filled, y + height], radius=fill_radius, fill=INK)
 
 
+def _draw_line_chart(draw, x, y, width, height, values, fonts, pad=4, floor_range=5.0):
+    """Small bordered sparkline for a rolling history of percentages, most
+    recent point on the right. Y-axis auto-scales to the data (floored to a
+    minimum span so a near-flat history doesn't look like noisy jitter)."""
+    draw.rounded_rectangle([x, y, x + width, y + height], radius=4, outline=INK, width=1)
+
+    numeric = [v for v in (values or []) if isinstance(v, (int, float))]
+    if len(numeric) < 2:
+        msg = "collecting history…"
+        tw = draw.textlength(msg, font=fonts.small)
+        draw.text((x + (width - tw) / 2, y + (height - fonts.small.size) / 2), msg, font=fonts.small, fill=INK)
+        return
+
+    inner_x0, inner_y0 = x + pad, y + pad
+    inner_x1, inner_y1 = x + width - pad, y + height - pad
+
+    lo, hi = min(numeric), max(numeric)
+    if hi - lo < floor_range:
+        mid = (hi + lo) / 2
+        lo, hi = mid - floor_range / 2, mid + floor_range / 2
+    lo = max(0.0, lo)
+
+    def scaled(v):
+        frac = 0.5 if hi == lo else (v - lo) / (hi - lo)
+        return inner_y1 - frac * (inner_y1 - inner_y0)
+
+    step = (inner_x1 - inner_x0) / (len(numeric) - 1)
+    points = [(inner_x0 + i * step, scaled(v)) for i, v in enumerate(numeric)]
+    draw.line(points, fill=INK, width=2, joint="curve")
+
+
 def _draw_banner(draw, x, y, right, text, font, pad=3):
     """Inverted call-out (INK fill, PAPER text) — same visual language as the panel title bars."""
     height = font.size + pad * 2
@@ -323,6 +354,14 @@ def _draw_pihole_health_panel(image, draw, box, fonts, health):
     draw.text((x, y), f"Load (1/5/15m): {load_str}", font=fonts.body, fill=INK)
     y += 23
     draw.text((x, y), f"Uptime: {_fmt_duration(health.get('uptime_seconds'))}", font=fonts.body, fill=INK)
+    y += 25
+
+    draw.text((x, y), "Mem history:", font=fonts.small, fill=INK)
+    y += 18
+
+    _, _, _, y1 = box
+    chart_bottom = y1 - ICON_PAD - ICON_SIZE - 6
+    _draw_line_chart(draw, x, y, right - x, chart_bottom - y, health.get("memory_history"), fonts)
 
 
 def _draw_system_panel(image, draw, box, fonts, health):
