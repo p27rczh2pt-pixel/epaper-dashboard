@@ -45,7 +45,7 @@ class Fonts:
         self.panel_title = ImageFont.truetype(_FONT_BOLD, 16)
         self.headline = ImageFont.truetype(_FONT_BOLD, 20)
         self.body = ImageFont.truetype(_FONT_REGULAR, 16)
-        self.small = ImageFont.truetype(_FONT_REGULAR, 14)
+        self.small = ImageFont.truetype(_FONT_BOLD, 14)
 
 
 # --- formatting helpers ---------------------------------------------------
