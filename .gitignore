@@ -7,3 +7,4 @@ display/output/*.png
 !display/output/.gitkeep
 .pytest_cache/
 data/
+NOTES.md
