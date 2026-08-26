@@ -19,7 +19,7 @@ HEIGHT = 480
 # Dark mode: white ink on a black page (including the panel/title bars,
 # which stay the inverse of the page either way). Flip to False for the
 # original black-on-white look.
-INVERTED = False
+INVERTED = True
 INK = 255 if INVERTED else 0
 PAPER = 0 if INVERTED else 255
 
