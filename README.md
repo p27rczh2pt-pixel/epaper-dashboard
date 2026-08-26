@@ -77,7 +77,7 @@ Confirmed working end-to-end on a real Pi Zero 2 W (Debian 13/trixie).
 
 - `epaper-api.service` — the Flask API, always running, restarts on failure.
 - `epaper-poller.timer` + `epaper-poller.service` — polls + pushes a full
-  refresh every 10 minutes (edit `OnUnitActiveSec` in the `.timer` file to
+  refresh every 15 minutes (edit `OnUnitActiveSec` in the `.timer` file to
   change the interval, then re-run the install script).
 
 ```
@@ -95,6 +95,6 @@ sudo systemctl start epaper-poller.service   # trigger a push right now
 - [x] PIL layout in `display/render.py` (2x2 panel grid, degrades gracefully on per-source errors)
 - [x] Waveshare driver vendored into `display/waveshare_lib/` and wired into `display/poller.py`
 - [x] Real end-to-end hardware validation on the Pi Zero
-- [x] Scheduling via systemd service + timer, running every 10 minutes
+- [x] Scheduling via systemd service + timer, running every 15 minutes
 - [x] Query rate anomaly flag — in-memory rolling baseline in `app/services/anomaly_service.py`, flagged in the DNS panel
 - [x] New device detection — persisted device inventory diff in `app/services/device_tracker.py`, badge in the Network panel

@@ -1,10 +1,10 @@
 [Unit]
-Description=Run the Epaper Dashboard poller every 10 minutes
+Description=Run the Epaper Dashboard poller every 15 minutes
 
 [Timer]
 # Give epaper-api.service a moment to come up after boot before the first push.
 OnBootSec=2min
-OnUnitActiveSec=10min
+OnUnitActiveSec=15min
 # If the Pi was off/rebooting at a scheduled run, do a run soon after it's back
 # instead of waiting a full cycle.
 Persistent=true
