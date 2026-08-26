@@ -1,5 +1,7 @@
 import shutil
 
+from app.services import disk_history
+
 _THERMAL_ZONE_PATH = "/sys/class/thermal/thermal_zone0/temp"
 _UPTIME_PATH = "/proc/uptime"
 _MEMINFO_PATH = "/proc/meminfo"
@@ -54,9 +56,15 @@ def get_disk_usage(path="/"):
 
 
 def get_system_health(disk_path="/"):
+    disk = get_disk_usage(disk_path)
+    percent_used = disk.get("percent_used") if disk else None
+    history = disk_history.get_tracker().record(percent_used)
+    if disk is not None:
+        disk["history"] = history
+
     return {
         "cpu_temp_celsius": get_cpu_temp_celsius(),
         "memory_percent_used": get_memory_percent_used(),
         "uptime_seconds": get_uptime_seconds(),
-        "disk": get_disk_usage(disk_path),
+        "disk": disk,
     }

@@ -1,3 +1,4 @@
+from app import create_app
 from app.services import system_service
 
 
@@ -46,7 +47,11 @@ def test_get_memory_percent_used_missing_file_returns_none(tmp_path):
 
 
 def test_get_system_health_shape(tmp_path):
-    health = system_service.get_system_health(disk_path=str(tmp_path))
+    # get_system_health() records disk usage into disk_history's tracker,
+    # which is scoped to the Flask app object (see app/services/disk_history.py).
+    with create_app().app_context():
+        health = system_service.get_system_health(disk_path=str(tmp_path))
 
     assert set(health.keys()) == {"cpu_temp_celsius", "memory_percent_used", "uptime_seconds", "disk"}
     assert health["uptime_seconds"] is not None  # /proc/uptime exists on any Linux box
+    assert health["disk"]["history"] == [health["disk"]["percent_used"]]

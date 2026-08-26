@@ -38,7 +38,13 @@ FULL_DATA = {
     "system_health": {
         "cpu_temp_celsius": 20.0,
         "uptime_seconds": 405002,
-        "disk": {"total_bytes": 1000, "used_bytes": 60, "free_bytes": 940, "percent_used": 6.0},
+        "disk": {
+            "total_bytes": 1000,
+            "used_bytes": 60,
+            "free_bytes": 940,
+            "percent_used": 6.0,
+            "history": [4.8, 4.9, 5.0, 5.4, 5.2, 5.1, 5.6, 5.5, 6.0],
+        },
     },
 }
 

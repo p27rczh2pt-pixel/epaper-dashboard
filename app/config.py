@@ -43,6 +43,10 @@ class Config:
     DEVICE_KNOWN_FILE = os.environ.get("DEVICE_KNOWN_FILE", os.path.join(BASE_DIR, "data", "known_devices.json"))
 
     # Pi-hole memory usage history, for the dashboard's sparkline (see
-    # app/services/memory_history.py). 36 samples at the poller's 10-minute
-    # interval covers a 6-hour window.
+    # app/services/memory_history.py). 36 samples at the poller's 15-minute
+    # interval covers a 9-hour window.
     PIHOLE_MEM_HISTORY_SIZE = int(os.environ.get("PIHOLE_MEM_HISTORY_SIZE", "36"))
+
+    # Pi Zero disk usage history, for the dashboard's sparkline (see
+    # app/services/disk_history.py). Same window as PIHOLE_MEM_HISTORY_SIZE.
+    DISK_HISTORY_SIZE = int(os.environ.get("DISK_HISTORY_SIZE", "36"))

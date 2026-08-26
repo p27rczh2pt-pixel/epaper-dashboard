@@ -399,6 +399,11 @@ def _draw_system_panel(image, draw, box, fonts, health):
     y += 21
     bar_fraction = (percent_used / 100.0) if isinstance(percent_used, (int, float)) else None
     _draw_bar(draw, x, y, right - x, 14, bar_fraction)
+    y += 14 + 4
+
+    _, _, _, y1 = box
+    chart_bottom = y1 - ICON_PAD - ICON_SIZE - 6
+    _draw_line_chart(draw, x, y, right - x, chart_bottom - y, disk.get("history"), fonts)
 
 
 # --- entry point ------------------------------------------------------------
