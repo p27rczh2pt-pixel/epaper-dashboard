@@ -1,3 +1,4 @@
+import threading
 import time
 
 import requests
@@ -37,6 +38,13 @@ class PiholeClient:
         self._sid = None
         self._csrf = None
         self._sid_expires_at = 0.0
+        # The dashboard fires its stats/health/devices requests back to back
+        # every refresh cycle; when the session has expired, each one calls
+        # _ensure_authenticated() around the same time and would otherwise
+        # each log in separately, burning 3 Pi-hole API "seats" (see
+        # webserver.api.max_sessions) for what should be 1. This lock makes
+        # the other requests wait for and reuse the in-flight login instead.
+        self._auth_lock = threading.Lock()
 
     def _authenticate(self):
         try:
@@ -70,8 +78,11 @@ class PiholeClient:
         self._sid_expires_at = time.monotonic() + max(validity - 15, 5)
 
     def _ensure_authenticated(self):
-        if not self._sid or time.monotonic() >= self._sid_expires_at:
-            self._authenticate()
+        if self._sid and time.monotonic() < self._sid_expires_at:
+            return
+        with self._auth_lock:
+            if not self._sid or time.monotonic() >= self._sid_expires_at:
+                self._authenticate()
 
     def _get(self, path, params=None):
         self._ensure_authenticated()
