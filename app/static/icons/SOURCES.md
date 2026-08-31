@@ -17,5 +17,10 @@ Source SVGs converted to flat black-on-transparent 40x40 PNGs via
 regenerate. Feather's icons use `stroke="currentColor"`, pinned to black
 explicitly during conversion rather than relying on a renderer default.
 
+Formerly pasted onto the e-paper canvas using the alpha channel as a mask
+(`display/render.py`, since removed); now served from `app/static/icons/`
+and colorized per-page in `dashboard.html` via CSS `mask-image`, which
+uses the same alpha channel the same way.
+
 Full license texts: [Simple Icons (CC0)](https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md),
 [Feather (MIT)](https://github.com/feathericons/feather/blob/main/LICENSE).

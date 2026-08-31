@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0d10">
+<title>LookingGlass Dashboard</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --card-bg: #14171c;
+    --card-border: #262b33;
+    --ink: #e8eaed;
+    --ink-dim: #9aa2ad;
+    --danger: #ff5f56;
+    --warn-bg: #3a2a06;
+    --warn-ink: #ffcf6b;
+    --ok: #3ddc84;
+
+    --accent-pihole: #ff7a70;
+    --accent-network: #4da3ff;
+    --accent-pihole-host: #5eead4;
+    --accent-dockzero: #f0a868;
+    --accent-devices: #b794f6;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(0.6rem, 1.6vh, 1.1rem) clamp(1rem, 2.4vw, 2rem);
+    border-bottom: 1px solid var(--card-border);
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: clamp(1.2rem, 2vw, 1.7rem);
+    letter-spacing: 0.02em;
+    font-weight: 700;
+  }
+
+  .dots {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .dots .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--card-border);
+    transition: background 0.4s ease;
+  }
+
+  .dots .dot.active { background: var(--ink); }
+
+  header .clock {
+    font-size: clamp(0.95rem, 1.6vw, 1.3rem);
+    color: var(--ink-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  main {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .page {
+    position: absolute;
+    inset: 0;
+    padding: clamp(1rem, 2.4vw, 2rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.8rem, 1.8vh, 1.5rem);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+  }
+
+  .page.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-shrink: 0;
+  }
+
+  .page-title h2 {
+    margin: 0;
+    font-size: clamp(1.3rem, 2.6vw, 2rem);
+    font-weight: 700;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--ok);
+    flex-shrink: 0;
+  }
+
+  .status-dot.error { background: var(--danger); }
+
+  .icon {
+    width: clamp(28px, 3vw, 40px);
+    height: clamp(28px, 3vw, 40px);
+    flex-shrink: 0;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+  }
+
+  .icon-pihole { -webkit-mask-image: url("/static/icons/pihole.png"); mask-image: url("/static/icons/pihole.png"); background-color: var(--accent-pihole); }
+  .icon-globe { -webkit-mask-image: url("/static/icons/globe.png"); mask-image: url("/static/icons/globe.png"); background-color: var(--accent-network); }
+  .icon-raspberrypi { -webkit-mask-image: url("/static/icons/raspberrypi.png"); mask-image: url("/static/icons/raspberrypi.png"); background-color: var(--accent-pihole-host); }
+  .icon-cpu { -webkit-mask-image: url("/static/icons/cpu.png"); mask-image: url("/static/icons/cpu.png"); background-color: var(--accent-dockzero); }
+  .icon-devices {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='4' width='18' height='4' rx='1'/%3E%3Crect x='3' y='10' width='18' height='4' rx='1'/%3E%3Crect x='3' y='16' width='18' height='4' rx='1'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='4' width='18' height='4' rx='1'/%3E%3Crect x='3' y='10' width='18' height='4' rx='1'/%3E%3Crect x='3' y='16' width='18' height='4' rx='1'/%3E%3C/svg%3E");
+    background-color: var(--accent-devices);
+  }
+
+  .error-message {
+    color: var(--danger);
+    font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+  }
+
+  .banner {
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    font-weight: 600;
+    font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+  }
+
+  .banner[hidden] { display: none; }
+
+  .stat-row {
+    display: flex;
+    gap: clamp(0.8rem, 1.6vw, 1.5rem);
+    flex-shrink: 0;
+  }
+
+  .stat-tile {
+    flex: 1;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: clamp(0.8rem, 1.6vh, 1.3rem) clamp(1rem, 1.8vw, 1.6rem);
+  }
+
+  .stat-tile .stat-value {
+    font-size: clamp(1.6rem, 3.6vw, 3rem);
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .stat-tile .stat-label {
+    margin-top: 0.3rem;
+    color: var(--ink-dim);
+    font-size: clamp(0.85rem, 1.3vw, 1.05rem);
+  }
+
+  .card-row {
+    display: flex;
+    gap: clamp(0.8rem, 1.6vw, 1.5rem);
+    flex: 1;
+    min-height: 0;
+  }
+
+  .card {
+    flex: 1;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: clamp(1rem, 1.8vh, 1.6rem);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.7rem;
+    flex-shrink: 0;
+  }
+
+  .card-header h3 {
+    margin: 0;
+    font-size: clamp(1.05rem, 1.8vw, 1.4rem);
+  }
+
+  .card-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    font-size: clamp(0.9rem, 1.3vw, 1.1rem);
+  }
+
+  .line { margin: 0.35rem 0; }
+  .dim { color: var(--ink-dim); }
+
+  .section-label {
+    margin-top: 0.8rem;
+    margin-bottom: 0.2rem;
+    font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-dim);
+  }
+
+  ul.item-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  ul.item-list li {
+    padding: 0.15rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  ul.item-list.device-list li {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  ul.item-list.device-list li:last-child { border-bottom: none; }
+
+  .device-name { font-weight: 600; }
+  .device-meta { font-size: 0.85em; margin-top: 0.15rem; }
+
+  .bar-track {
+    background: #262b33;
+    border-radius: 999px;
+    height: clamp(10px, 1.4vh, 16px);
+    overflow: hidden;
+    margin-top: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    width: 0%;
+    background: var(--accent-dockzero);
+    transition: width 0.4s ease;
+  }
+
+  .bar-fill.warn { background: var(--warn-ink); }
+  .bar-fill.danger { background: var(--danger); }
+
+  .sparkline {
+    width: 100%;
+    height: clamp(40px, 8vh, 70px);
+    margin-top: 0.6rem;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .sparkline.sparkline-lg {
+    height: clamp(90px, 22vh, 200px);
+  }
+
+  .sparkline-empty {
+    color: var(--ink-dim);
+    font-size: clamp(0.8rem, 1.1vw, 0.95rem);
+    margin-top: 0.5rem;
+  }
+
+  footer {
+    text-align: center;
+    padding: 0.35rem;
+    font-size: clamp(0.7rem, 1vw, 0.85rem);
+    color: var(--ink-dim);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>LookingGlass</h1>
+  <div class="dots" id="nav-dots"></div>
+  <div class="clock" id="clock">--:--:--</div>
+</header>
+
+<main>
+
+  <section class="page active" id="page-pihole">
+    <div class="page-title">
+      <span class="icon icon-pihole"></span>
+      <h2>Pi-hole</h2>
+      <span class="status-dot" id="pihole-status"></span>
+    </div>
+    <div class="error-message" id="pihole-error" hidden></div>
+    <div class="banner" id="dns-anomaly-banner" hidden></div>
+    <div class="stat-row">
+      <div class="stat-tile">
+        <div class="stat-value" id="dns-total">—</div>
+        <div class="stat-label">queries today</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value" id="dns-blocked">—</div>
+        <div class="stat-label" id="dns-blocked-label">blocked</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value" id="dns-clients">—</div>
+        <div class="stat-label">active clients</div>
+      </div>
+    </div>
+    <div class="card-row">
+      <div class="card">
+        <div class="card-header"><h3>Top blocked domains</h3></div>
+        <div class="card-body"><ul class="item-list" id="dns-domains"></ul></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Top clients</h3></div>
+        <div class="card-body"><ul class="item-list" id="dns-clients-list"></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="page-network">
+    <div class="page-title">
+      <span class="icon icon-globe"></span>
+      <h2>Network</h2>
+      <span class="status-dot" id="network-status"></span>
+    </div>
+    <div class="error-message" id="network-error" hidden></div>
+    <div class="stat-row">
+      <div class="stat-tile">
+        <div class="stat-value" id="network-ping">—</div>
+        <div class="stat-label" id="network-ping-detail">to — (—/— received)</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value" id="network-ip">—</div>
+        <div class="stat-label" id="network-isp">ISP: —</div>
+      </div>
+    </div>
+    <div class="card-row">
+      <div class="card">
+        <div class="card-header"><h3>Status</h3></div>
+        <div class="card-body">
+          <div class="line dim" id="network-location"></div>
+          <div class="banner" id="network-time-banner" hidden></div>
+          <div class="line dim" id="network-time-ok"></div>
+          <div class="banner" id="network-devices-banner" hidden></div>
+          <div class="line dim" id="network-devices-ok">New devices: —</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Ping Latency <span class="dim" style="font-weight:400;">(past hour)</span></h3></div>
+        <div class="card-body">
+          <div class="line dim" id="ping-history-summary" hidden></div>
+          <svg class="sparkline sparkline-lg" id="ping-history-chart" preserveAspectRatio="none"></svg>
+          <div class="sparkline-empty" id="ping-history-chart-empty" hidden>collecting history…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="page-system">
+    <div class="page-title">
+      <h2>System Health</h2>
+    </div>
+    <div class="card-row">
+      <div class="card">
+        <div class="card-header">
+          <span class="icon icon-raspberrypi"></span>
+          <h3>Pi-hole Host</h3>
+          <span class="status-dot" id="pihole-health-status"></span>
+        </div>
+        <div class="card-body">
+          <div class="error-message" id="pihole-health-error" hidden></div>
+          <div class="stat-row" style="margin-bottom: 0.5rem;">
+            <div class="stat-tile">
+              <div class="stat-value" id="pihole-mem">—</div>
+              <div class="stat-label">memory used</div>
+            </div>
+          </div>
+          <div class="line" id="pihole-load">Load (1/5/15m): —</div>
+          <div class="line" id="pihole-uptime">Uptime: —</div>
+          <div class="section-label">Memory history</div>
+          <svg class="sparkline" id="pihole-sparkline" preserveAspectRatio="none"></svg>
+          <div class="sparkline-empty" id="pihole-sparkline-empty" hidden>collecting history…</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="icon icon-cpu"></span>
+          <h3>Dock Zero</h3>
+          <span class="status-dot" id="system-status"></span>
+        </div>
+        <div class="card-body">
+          <div class="error-message" id="system-error" hidden></div>
+          <div class="stat-row" style="margin-bottom: 0.5rem;">
+            <div class="stat-tile">
+              <div class="stat-value" id="system-temp">—</div>
+              <div class="stat-label">CPU temp</div>
+            </div>
+          </div>
+          <div class="line" id="system-mem">Mem —%</div>
+          <div class="line" id="system-uptime">Uptime: —</div>
+          <div class="line" id="system-disk">Disk: —% used (— free)</div>
+          <div class="bar-track"><div class="bar-fill" id="system-disk-bar"></div></div>
+          <div class="section-label">Disk usage history</div>
+          <svg class="sparkline" id="system-disk-sparkline" preserveAspectRatio="none"></svg>
+          <div class="sparkline-empty" id="system-disk-sparkline-empty" hidden>collecting history…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="page-devices">
+    <div class="page-title">
+      <span class="icon icon-devices"></span>
+      <h2>Devices</h2>
+      <span class="status-dot" id="devices-status"></span>
+    </div>
+    <div class="error-message" id="devices-error" hidden></div>
+    <div class="stat-row">
+      <div class="stat-tile">
+        <div class="stat-value" id="devices-count">—</div>
+        <div class="stat-label">known devices</div>
+      </div>
+    </div>
+    <div class="card-row">
+      <div class="card">
+        <div class="card-header"><h3>All devices</h3></div>
+        <div class="card-body"><ul class="item-list device-list" id="devices-list"></ul></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Updated <span id="last-updated">never</span></footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var PAGES = ["page-pihole", "page-network", "page-system", "page-devices"];
+  var ROTATE_INTERVAL_MS = 12000;
+  var REFRESH_INTERVAL_MS = 60000;
+  var currentPage = 0;
+
+  function fmtInt(n) {
+    return typeof n === "number" ? n.toLocaleString() : "—";
+  }
+  function fmtPct(p) {
+    return typeof p === "number" ? p.toFixed(1) + "%" : "—";
+  }
+  function fmtMs(v) {
+    return typeof v === "number" ? v.toFixed(1) + " ms" : "—";
+  }
+  function fmtTemp(v) {
+    return typeof v === "number" ? v.toFixed(1) + "°C" : "—";
+  }
+  function fmtBytes(n) {
+    if (typeof n !== "number") return "—";
+    var units = ["B", "KB", "MB", "GB", "TB"];
+    var value = n, i = 0;
+    while (Math.abs(value) >= 1024 && i < units.length - 1) {
+      value /= 1024;
+      i++;
+    }
+    return i === 0 ? value.toFixed(0) + units[i] : value.toFixed(1) + units[i];
+  }
+  function fmtRelativeAgo(epochSeconds) {
+    if (typeof epochSeconds !== "number" || epochSeconds <= 0) return "—";
+    var deltaSeconds = Math.max(0, (Date.now() / 1000) - epochSeconds);
+    if (deltaSeconds < 90) return "just now";
+    var minutes = Math.floor(deltaSeconds / 60);
+    if (minutes < 60) return minutes + "m ago";
+    var hours = Math.floor(minutes / 60);
+    if (hours < 24) return hours + "h ago";
+    var days = Math.floor(hours / 24);
+    return days + "d ago";
+  }
+
+  function fmtDuration(seconds) {
+    if (typeof seconds !== "number") return "—";
+    seconds = Math.floor(seconds);
+    var days = Math.floor(seconds / 86400);
+    var hours = Math.floor((seconds % 86400) / 3600);
+    var minutes = Math.floor((seconds % 3600) / 60);
+    if (days) return days + "d " + hours + "h";
+    if (hours) return hours + "h " + minutes + "m";
+    return minutes + "m";
+  }
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+  function setText(id, text) {
+    var el = $(id);
+    if (el) el.textContent = text;
+  }
+  function setHidden(id, hidden) {
+    var el = $(id);
+    if (el) el.hidden = hidden;
+  }
+
+  function setPanelStatus(name, ok) {
+    var dot = $(name + "-status");
+    if (dot) dot.classList.toggle("error", !ok);
+  }
+
+  function setPanelError(name, message) {
+    setPanelStatus(name, false);
+    setText(name + "-error", "Unavailable: " + message);
+    setHidden(name + "-error", false);
+  }
+
+  function clearPanelError(name) {
+    setPanelStatus(name, true);
+    setHidden(name + "-error", true);
+  }
+
+  function fetchJSON(url) {
+    return fetch(url, { cache: "no-store" }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) {
+          throw new Error(data.message || data.error || ("HTTP " + res.status));
+        }
+        return data;
+      });
+    });
+  }
+
+  function renderSparkline(svg, values, color) {
+    var numeric = (values || []).filter(function (v) { return typeof v === "number"; });
+    var emptyId = svg.id + "-empty";
+    if (numeric.length < 2) {
+      svg.hidden = true;
+      setHidden(emptyId, false);
+      return;
+    }
+    svg.hidden = false;
+    setHidden(emptyId, true);
+
+    var width = 300, height = 60, pad = 4;
+    svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+
+    var lo = Math.min.apply(null, numeric);
+    var hi = Math.max.apply(null, numeric);
+    var floorRange = 5.0;
+    if (hi - lo < floorRange) {
+      var mid = (hi + lo) / 2;
+      lo = mid - floorRange / 2;
+      hi = mid + floorRange / 2;
+    }
+    lo = Math.max(0, lo);
+
+    var innerW = width - pad * 2, innerH = height - pad * 2;
+    var step = innerW / (numeric.length - 1);
+    var points = numeric.map(function (v, i) {
+      var frac = hi === lo ? 0.5 : (v - lo) / (hi - lo);
+      var x = pad + i * step;
+      var y = pad + innerH - frac * innerH;
+      return x.toFixed(1) + "," + y.toFixed(1);
+    });
+
+    svg.innerHTML =
+      '<polyline points="' + points.join(" ") + '" fill="none" stroke="' + color + '" stroke-width="2.5" ' +
+      'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />';
+  }
+
+  function renderPingChart(svg, rttValues, lossValues, color) {
+    rttValues = rttValues || [];
+    lossValues = lossValues || [];
+    var numeric = rttValues.filter(function (v) { return typeof v === "number"; });
+    var emptyId = svg.id + "-empty";
+
+    if (numeric.length < 2) {
+      svg.hidden = true;
+      setHidden(emptyId, false);
+      setHidden("ping-history-summary", true);
+      return;
+    }
+    svg.hidden = false;
+    setHidden(emptyId, true);
+    setHidden("ping-history-summary", false);
+
+    var width = 600, height = 140, pad = 8;
+    svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+
+    var rawLo = Math.min.apply(null, numeric);
+    var rawHi = Math.max.apply(null, numeric);
+    var lo = rawLo, hi = rawHi;
+    var floorRange = 10.0;
+    if (hi - lo < floorRange) {
+      var mid = (hi + lo) / 2;
+      lo = mid - floorRange / 2;
+      hi = mid + floorRange / 2;
+    }
+    lo = Math.max(0, lo);
+
+    var innerW = width - pad * 2, innerH = height - pad * 2;
+    var count = rttValues.length;
+    var step = count > 1 ? innerW / (count - 1) : 0;
+
+    function scaled(v) {
+      var frac = hi === lo ? 0.5 : (v - lo) / (hi - lo);
+      return pad + innerH - frac * innerH;
+    }
+
+    // Build the line as an explicit path (not a polyline) so a gap where
+    // the ping failed breaks the line instead of silently connecting
+    // across it — an outage should look like an outage.
+    var d = "", drawing = false;
+    rttValues.forEach(function (v, i) {
+      if (typeof v !== "number") { drawing = false; return; }
+      var x = pad + i * step;
+      var y = scaled(v);
+      d += (drawing ? " L " : " M ") + x.toFixed(1) + " " + y.toFixed(1);
+      drawing = true;
+    });
+
+    // Small markers along the bottom wherever a sample had any packet
+    // loss, independent of the latency line above (loss can happen
+    // without a resolvable rtt, e.g. 100% loss).
+    var markers = "";
+    lossValues.forEach(function (v, i) {
+      if (typeof v === "number" && v > 0) {
+        var x = pad + i * step;
+        markers += '<circle cx="' + x.toFixed(1) + '" cy="' + (height - pad).toFixed(1) + '" r="3" fill="var(--danger)" />';
+      }
+    });
+
+    svg.innerHTML =
+      '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2.5" ' +
+      'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />' + markers;
+
+    var lastRaw = rttValues[rttValues.length - 1];
+    var nowLabel = typeof lastRaw === "number" ? lastRaw.toFixed(1) + " ms" : "no reply";
+    setText("ping-history-summary", "now " + nowLabel + " · min " + rawLo.toFixed(1) + " ms · max " + rawHi.toFixed(1) + " ms");
+  }
+
+  function deviceLabel(device) {
+    var label = device.hostname || device.vendor || device.mac || "unknown";
+    var ip = (device.ips || [])[0];
+    return ip ? label + " (" + ip + ")" : label;
+  }
+
+  function updateDns() {
+    fetchJSON("/api/pihole/stats").then(function (data) {
+      clearPanelError("pihole");
+
+      setText("dns-total", fmtInt(data.queries_total));
+      setText("dns-blocked", fmtInt(data.queries_blocked));
+      setText("dns-blocked-label", "blocked (" + fmtPct(data.percent_blocked) + ")");
+      setText("dns-clients", fmtInt(data.unique_clients));
+
+      var anomaly = data.traffic_anomaly || {};
+      if (anomaly.is_anomaly) {
+        var qpm = anomaly.queries_per_min, baseline = anomaly.baseline_qpm;
+        var alert = (qpm && baseline)
+          ? "⚠ Traffic spike: " + qpm.toFixed(0) + " vs " + baseline.toFixed(0) + " qpm"
+          : "⚠ Unusual traffic";
+        setText("dns-anomaly-banner", alert);
+        setHidden("dns-anomaly-banner", false);
+      } else {
+        setHidden("dns-anomaly-banner", true);
+      }
+
+      var domainsList = $("dns-domains");
+      domainsList.innerHTML = "";
+      (data.top_blocked_domains || []).forEach(function (item) {
+        var li = document.createElement("li");
+        li.textContent = (item.domain || "?") + " (" + fmtInt(item.count) + ")";
+        domainsList.appendChild(li);
+      });
+
+      var clientsList = $("dns-clients-list");
+      clientsList.innerHTML = "";
+      (data.top_clients || []).forEach(function (item) {
+        var li = document.createElement("li");
+        li.textContent = (item.client || "?") + " (" + fmtInt(item.count) + ")";
+        clientsList.appendChild(li);
+      });
+
+      var devices = data.new_devices;
+      if (devices && devices.new_count) {
+        var count = devices.new_count;
+        var seen = devices.new_devices || [];
+        var text = (count === 1 && seen[0]) ? ("New device: " + deviceLabel(seen[0])) : ("New devices: " + count);
+        setText("network-devices-banner", "⚠ " + text);
+        setHidden("network-devices-banner", false);
+        setHidden("network-devices-ok", true);
+      } else if (devices) {
+        setHidden("network-devices-banner", true);
+        setHidden("network-devices-ok", false);
+        setText("network-devices-ok", "New devices: 0");
+      }
+    }).catch(function (err) {
+      setPanelError("pihole", err.message);
+    });
+  }
+
+  function updateNetwork() {
+    fetchJSON("/api/network/health").then(function (data) {
+      clearPanelError("network");
+
+      var ping = data.ping || {};
+      if (ping.error) {
+        setText("network-ping", "—");
+        setText("network-ping-detail", "Ping unavailable: " + ping.error);
+      } else {
+        setText("network-ping", fmtMs(ping.rtt_avg_ms));
+        setText(
+          "network-ping-detail",
+          fmtPct(ping.packet_loss_percent) + " loss to " + (ping.host || "?") +
+          " (" + fmtInt(ping.packets_received) + "/" + fmtInt(ping.packets_transmitted) + " received)"
+        );
+      }
+
+      var external = data.external_ip || {};
+      if (external.error) {
+        setText("network-ip", "—");
+        setText("network-isp", "External IP unavailable");
+        setText("network-location", "");
+      } else {
+        setText("network-ip", external.ip || "—");
+        setText("network-isp", "ISP: " + (external.isp || "—"));
+        var location = [external.city, external.region, external.country].filter(Boolean).join(", ");
+        setText("network-location", location);
+      }
+
+      var timeSync = data.time_sync || {};
+      if (timeSync.error) {
+        setHidden("network-time-banner", true);
+        setText("network-time-ok", "Time Sync: unavailable");
+      } else if (timeSync.synced === false) {
+        setText("network-time-banner", "⚠ Time NOT synced");
+        setHidden("network-time-banner", false);
+      } else if ("synced" in timeSync) {
+        setHidden("network-time-banner", true);
+        var offset = timeSync.offset_ms;
+        setText("network-time-ok", typeof offset === "number"
+          ? "Time Sync: OK (" + (offset >= 0 ? "+" : "") + offset.toFixed(1) + "ms)"
+          : "Time Sync: OK");
+      } else {
+        setHidden("network-time-banner", true);
+        setText("network-time-ok", "Time Sync: —");
+      }
+
+      var pingHistory = data.ping_history || {};
+      renderPingChart($("ping-history-chart"), pingHistory.rtt_avg_ms, pingHistory.packet_loss_percent, "#4da3ff");
+    }).catch(function (err) {
+      setPanelError("network", err.message);
+    });
+  }
+
+  function updatePiholeHealth() {
+    fetchJSON("/api/pihole/health").then(function (data) {
+      clearPanelError("pihole-health");
+
+      setText("pihole-mem", fmtPct(data.memory_percent_used));
+
+      var load = (data.cpu_load_percent || []).filter(function (v) { return typeof v === "number"; });
+      setText("pihole-load", "Load (1/5/15m): " + (load.length ? load.map(function (v) { return v.toFixed(2); }).join(", ") : "—"));
+      setText("pihole-uptime", "Uptime: " + fmtDuration(data.uptime_seconds));
+
+      renderSparkline($("pihole-sparkline"), data.memory_history, "#5eead4");
+    }).catch(function (err) {
+      setPanelError("pihole-health", err.message);
+    });
+  }
+
+  function updateSystem() {
+    fetchJSON("/api/system/health").then(function (data) {
+      clearPanelError("system");
+
+      setText("system-temp", fmtTemp(data.cpu_temp_celsius));
+      setText("system-mem", "Mem " + fmtPct(data.memory_percent_used));
+      setText("system-uptime", "Uptime: " + fmtDuration(data.uptime_seconds));
+
+      var disk = data.disk || {};
+      var percentUsed = disk.percent_used;
+      setText("system-disk", "Disk: " + fmtPct(percentUsed) + " used (" + fmtBytes(disk.free_bytes) + " free)");
+
+      var bar = $("system-disk-bar");
+      var fraction = typeof percentUsed === "number" ? Math.max(0, Math.min(100, percentUsed)) : 0;
+      bar.style.width = fraction + "%";
+      bar.classList.toggle("danger", fraction >= 90);
+      bar.classList.toggle("warn", fraction >= 75 && fraction < 90);
+
+      renderSparkline($("system-disk-sparkline"), disk.history, "#f0a868");
+    }).catch(function (err) {
+      setPanelError("system", err.message);
+    });
+  }
+
+  function updateDevices() {
+    fetchJSON("/api/pihole/devices").then(function (data) {
+      clearPanelError("devices");
+
+      setText("devices-count", fmtInt(data.count));
+
+      var list = $("devices-list");
+      list.innerHTML = "";
+      (data.devices || []).forEach(function (device) {
+        var ip = (device.ips || [])[0];
+        var name = device.hostname || device.vendor || device.mac || "unknown";
+
+        var nameDiv = document.createElement("div");
+        nameDiv.className = "device-name";
+        nameDiv.textContent = ip ? name + " (" + ip + ")" : name;
+
+        var metaParts = [];
+        if (device.vendor && device.vendor !== name) metaParts.push(device.vendor);
+        metaParts.push("active " + fmtRelativeAgo(device.last_query_at));
+        if (typeof device.query_count === "number") metaParts.push(fmtInt(device.query_count) + " queries");
+
+        var metaDiv = document.createElement("div");
+        metaDiv.className = "device-meta dim";
+        metaDiv.textContent = metaParts.join(" · ");
+
+        var li = document.createElement("li");
+        li.appendChild(nameDiv);
+        li.appendChild(metaDiv);
+        list.appendChild(li);
+      });
+    }).catch(function (err) {
+      setPanelError("devices", err.message);
+    });
+  }
+
+  function updateClock() {
+    var now = new Date();
+    setText("clock", now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+  }
+
+  function pollAll() {
+    updateDns();
+    updateNetwork();
+    updatePiholeHealth();
+    updateSystem();
+    updateDevices();
+    setText("last-updated", new Date().toLocaleTimeString());
+  }
+
+  function buildNavDots() {
+    var container = $("nav-dots");
+    PAGES.forEach(function (_, i) {
+      var dot = document.createElement("span");
+      dot.className = "dot" + (i === 0 ? " active" : "");
+      container.appendChild(dot);
+    });
+  }
+
+  function showPage(index) {
+    PAGES.forEach(function (id, i) {
+      $(id).classList.toggle("active", i === index);
+    });
+    $("nav-dots").querySelectorAll(".dot").forEach(function (dot, i) {
+      dot.classList.toggle("active", i === index);
+    });
+  }
+
+  function rotate() {
+    currentPage = (currentPage + 1) % PAGES.length;
+    showPage(currentPage);
+  }
+
+  buildNavDots();
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  pollAll();
+  setInterval(pollAll, REFRESH_INTERVAL_MS);
+  setInterval(rotate, ROTATE_INTERVAL_MS);
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") pollAll();
+  });
+})();
+</script>
+
+</body>
+</html>

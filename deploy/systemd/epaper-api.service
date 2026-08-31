@@ -1,5 +1,5 @@
 [Unit]
-Description=Epaper Dashboard Flask API
+Description=PiDock Dashboard Flask API (serves data + the iPad web dashboard)
 After=network-online.target
 Wants=network-online.target
 
