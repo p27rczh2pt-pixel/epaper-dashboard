@@ -6,16 +6,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 sudo cp "$SCRIPT_DIR/systemd/epaper-api.service" /etc/systemd/system/
-sudo cp "$SCRIPT_DIR/systemd/epaper-poller.service" /etc/systemd/system/
-sudo cp "$SCRIPT_DIR/systemd/epaper-poller.timer" /etc/systemd/system/
+sudo cp "$SCRIPT_DIR/systemd/wifi-watchdog.service" /etc/systemd/system/
+sudo cp "$SCRIPT_DIR/systemd/wifi-watchdog.timer" /etc/systemd/system/
+sudo chmod +x "$SCRIPT_DIR/wifi-watchdog.sh"
 
 sudo systemctl daemon-reload
 sudo systemctl enable --now epaper-api.service
-sudo systemctl enable --now epaper-poller.timer
+sudo systemctl enable --now wifi-watchdog.timer
 
 echo
 echo "Installed. Useful commands:"
 echo "  systemctl status epaper-api.service"
-echo "  systemctl list-timers epaper-poller.timer"
-echo "  journalctl -u epaper-poller.service -n 50 --no-pager"
-echo "  sudo systemctl start epaper-poller.service   # trigger a push right now"
+echo "  journalctl -u epaper-api.service -n 50 --no-pager"
+echo "  systemctl list-timers wifi-watchdog.timer"
+echo "  journalctl -t wifi-watchdog -n 50 --no-pager"

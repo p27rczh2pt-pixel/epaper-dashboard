@@ -1,0 +1,8 @@
+[Unit]
+Description=WiFi watchdog - recover wlan0 if it drops off the network
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/warwagen/epaper-dashboard/deploy/wifi-watchdog.sh
