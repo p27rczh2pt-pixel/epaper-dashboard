@@ -59,7 +59,7 @@
 
   header h1 {
     margin: 0;
-    font-size: clamp(1.2rem, 2vw, 1.7rem);
+    font-size: clamp(1.1rem, 1.8vw, 1.5rem);
     letter-spacing: 0.02em;
     font-weight: 700;
   }
@@ -117,7 +117,7 @@
 
   .page-title h2 {
     margin: 0;
-    font-size: clamp(1.5rem, 3vw, 2.4rem);
+    font-size: clamp(1.3rem, 2.6vw, 2.1rem);
     font-weight: 700;
   }
 
@@ -177,6 +177,7 @@
 
   .stat-tile {
     flex: 1;
+    min-width: 0;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 16px;
@@ -184,14 +185,16 @@
   }
 
   .stat-tile .stat-value {
-    font-size: clamp(2rem, 4.2vw, 3.6rem);
+    font-size: clamp(1.7rem, 3.6vw, 3rem);
     font-weight: 700;
     line-height: 1.1;
+    overflow-wrap: anywhere;
   }
 
   .stat-tile .stat-label {
     margin-top: 0.4rem;
     color: var(--ink-dim);
+    overflow-wrap: anywhere;
     font-size: clamp(0.95rem, 1.5vw, 1.2rem);
   }
 
@@ -232,7 +235,7 @@
 
   .card-header h3 {
     margin: 0;
-    font-size: clamp(1.2rem, 2vw, 1.6rem);
+    font-size: clamp(1.1rem, 1.8vw, 1.4rem);
   }
 
   .card-body {
