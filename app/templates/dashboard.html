@@ -201,7 +201,7 @@
 
   .card-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     grid-template-rows: 1fr 1fr;
     gap: clamp(1rem, 1.8vw, 1.8rem);
     flex: 1;
@@ -394,14 +394,6 @@
           <div class="sparkline-empty" id="ping-history-chart-empty" hidden>collecting history…</div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section class="page" id="page-system">
-    <div class="page-title">
-      <h2>System Health</h2>
-    </div>
-    <div class="card-row">
       <div class="card">
         <div class="card-header">
           <span class="icon icon-raspberrypi"></span>
@@ -478,7 +470,7 @@
 (function () {
   "use strict";
 
-  var PAGES = ["page-pihole-network", "page-system", "page-devices"];
+  var PAGES = ["page-pihole-network", "page-devices"];
   var ROTATE_INTERVAL_MS = 15000;
   var REFRESH_INTERVAL_MS = 60000;
   var currentPage = 0;
