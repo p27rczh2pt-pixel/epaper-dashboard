@@ -30,6 +30,11 @@ def health():
         return jsonify({"error": "pihole_unreachable", "message": str(exc)}), 502
 
 
-@bp.teardown_app_request
-def _close_pihole_client(exception=None):
-    pihole_service.close_client(exception)
+@bp.route("/devices")
+def devices():
+    try:
+        return jsonify(pihole_service.get_device_list())
+    except PiholeAuthError as exc:
+        return jsonify({"error": "pihole_auth_failed", "message": str(exc)}), 502
+    except (PiholeAPIError, requests.RequestException) as exc:
+        return jsonify({"error": "pihole_unreachable", "message": str(exc)}), 502
