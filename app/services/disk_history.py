@@ -1,7 +1,8 @@
 """
 Rolling history of the Pi Zero's disk usage percentage, sampled once per
-call to get_system_health() (i.e. once per poller run), for the dashboard's
-disk sparkline.
+call to get_system_health() — driven by the dashboard page's background
+refresh (60s) now that there's no separate poller process — for the
+dashboard's disk sparkline.
 
 State lives in a single process-global tracker instance, kept alive by the
 Flask API process running continuously under systemd — same tradeoff as

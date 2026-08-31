@@ -20,6 +20,14 @@ class Config:
     NETWORK_PING_TIMEOUT = float(os.environ.get("NETWORK_PING_TIMEOUT", "5"))
     TIME_SYNC_TIMEOUT = float(os.environ.get("TIME_SYNC_TIMEOUT", "5"))
 
+    # Ping latency/loss history, for the Network page's rolling chart (see
+    # app/services/ping_history.py). Sampled once per dashboard background
+    # refresh (60s, see dashboard.html) rather than on a fixed schedule —
+    # there's no separate poller process anymore, so 60 samples covers
+    # roughly the past hour AS LONG AS the dashboard page stays open and
+    # polling; history stalls (doesn't backfill) while nothing is viewing it.
+    NETWORK_PING_HISTORY_SIZE = int(os.environ.get("NETWORK_PING_HISTORY_SIZE", "60"))
+
     # ip-api.com's free tier (~45 req/min, no key) — swapped from ipapi.co,
     # whose free daily quota was getting exhausted and 429ing. No HTTPS on
     # the free tier; the payload is just public IP geolocation, not sensitive.
@@ -42,11 +50,19 @@ class Config:
     # to disk (not in-memory) so it survives Flask restarts/reboots.
     DEVICE_KNOWN_FILE = os.environ.get("DEVICE_KNOWN_FILE", os.path.join(BASE_DIR, "data", "known_devices.json"))
 
+    # Devices page (see pihole_service.get_device_list): only show devices
+    # with query activity within this many days, so the list reflects
+    # what's actually still on the network instead of everything Pi-hole's
+    # network table has ever recorded.
+    DEVICE_LIST_ACTIVE_DAYS = int(os.environ.get("DEVICE_LIST_ACTIVE_DAYS", "30"))
+
     # Pi-hole memory usage history, for the dashboard's sparkline (see
-    # app/services/memory_history.py). 36 samples at the poller's 15-minute
-    # interval covers a 9-hour window.
-    PIHOLE_MEM_HISTORY_SIZE = int(os.environ.get("PIHOLE_MEM_HISTORY_SIZE", "36"))
+    # app/services/memory_history.py). Sampled once per dashboard background
+    # refresh (60s) — there's no separate poller process anymore — so 540
+    # samples covers roughly the past 9 hours, matching the window this
+    # sparkline was originally designed around.
+    PIHOLE_MEM_HISTORY_SIZE = int(os.environ.get("PIHOLE_MEM_HISTORY_SIZE", "540"))
 
     # Pi Zero disk usage history, for the dashboard's sparkline (see
     # app/services/disk_history.py). Same window as PIHOLE_MEM_HISTORY_SIZE.
-    DISK_HISTORY_SIZE = int(os.environ.get("DISK_HISTORY_SIZE", "36"))
+    DISK_HISTORY_SIZE = int(os.environ.get("DISK_HISTORY_SIZE", "540"))

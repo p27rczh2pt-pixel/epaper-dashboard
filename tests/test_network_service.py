@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
+from app import create_app
 from app.services import network_service
 from app.services.network_service import NetworkError, get_network_health, ping_host
 
@@ -149,7 +150,11 @@ def test_get_network_health_reports_partial_failure(mock_run, mock_get):
         "EXTERNAL_IP_CACHE_TTL": 3600,
     }
 
-    result = get_network_health(config)
+    # get_network_health() records into ping_history's tracker, which is
+    # scoped to the Flask app object (see app/services/ping_history.py).
+    with create_app().app_context():
+        result = get_network_health(config)
 
     assert result["ping"]["packet_loss_percent"] == 0.0
     assert "error" in result["external_ip"]
+    assert result["ping_history"] == {"rtt_avg_ms": [12.1], "packet_loss_percent": [0.0]}

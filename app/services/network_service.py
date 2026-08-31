@@ -4,6 +4,8 @@ import time
 
 import requests
 
+from app.services import ping_history
+
 _STATS_RE = re.compile(
     r"(?P<transmitted>\d+) packets transmitted, (?P<received>\d+) (?:packets )?received,.*?"
     r"(?P<loss>[\d.]+)% packet loss"
@@ -139,6 +141,11 @@ def get_network_health(app_config):
         )
     except NetworkError as exc:
         result["ping"] = {"error": str(exc)}
+
+    result["ping_history"] = ping_history.get_tracker().record(
+        result["ping"].get("rtt_avg_ms"),
+        result["ping"].get("packet_loss_percent"),
+    )
 
     try:
         result["time_sync"] = get_time_sync_status(timeout=app_config["TIME_SYNC_TIMEOUT"])
