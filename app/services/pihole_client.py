@@ -51,6 +51,11 @@ class PiholeClient:
 
         if resp.status_code == 401:
             raise PiholeAuthError("Pi-hole rejected the app password")
+        if resp.status_code == 429:
+            raise PiholeAuthError(
+                "Pi-hole API session limit reached (webserver.api.max_sessions) — "
+                "an old session probably hasn't expired yet, try again shortly"
+            )
         resp.raise_for_status()
 
         payload = resp.json()
