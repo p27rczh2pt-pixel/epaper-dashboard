@@ -387,7 +387,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><h3>Ping Latency <span class="dim" style="font-weight:400;">(past hour)</span></h3></div>
+        <div class="card-header"><h3>Ping Latency <span class="dim" style="font-weight:400;">(past 24h)</span></h3></div>
         <div class="card-body">
           <div class="line dim" id="ping-history-summary" hidden></div>
           <svg class="sparkline sparkline-lg" id="ping-history-chart" preserveAspectRatio="none"></svg>
@@ -605,6 +605,25 @@
       'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />';
   }
 
+  // Groups history into at most maxBars buckets, taking the max rtt/loss
+  // within each bucket rather than an average, so a brief spike or outage
+  // stays visible instead of getting smoothed away when there's far more
+  // history (up to 1440 samples for 24h) than there is room to draw bars.
+  function bucketPingData(rttValues, lossValues, maxBars) {
+    var n = rttValues.length;
+    if (n <= maxBars) return { rtt: rttValues, loss: lossValues };
+
+    var bucketSize = Math.ceil(n / maxBars);
+    var rtt = [], loss = [];
+    for (var i = 0; i < n; i += bucketSize) {
+      var nums = rttValues.slice(i, i + bucketSize).filter(function (v) { return typeof v === "number"; });
+      var lossNums = lossValues.slice(i, i + bucketSize).filter(function (v) { return typeof v === "number"; });
+      rtt.push(nums.length ? Math.max.apply(null, nums) : null);
+      loss.push(lossNums.length ? Math.max.apply(null, lossNums) : null);
+    }
+    return { rtt: rtt, loss: loss };
+  }
+
   function renderPingChart(svg, rttValues, lossValues, color) {
     rttValues = rttValues || [];
     lossValues = lossValues || [];
@@ -636,7 +655,9 @@
     lo = Math.max(0, lo);
 
     var innerW = width - pad * 2, innerH = height - pad * 2;
-    var count = rttValues.length;
+    var bucketed = bucketPingData(rttValues, lossValues, 240);
+    var bucketRtt = bucketed.rtt, bucketLoss = bucketed.loss;
+    var count = bucketRtt.length;
     var slot = innerW / count;
     var barWidth = Math.max(1, slot * 0.7);
 
@@ -645,16 +666,16 @@
       return pad + innerH - frac * innerH;
     }
 
-    // One bar per sample rather than a connected line, so gaps read as
-    // missing bars instead of an interpolated slope. A sample with any
-    // packet loss (even a resolvable rtt alongside partial loss) gets a
-    // red bar; total loss with no rtt at all gets a full-height red bar,
-    // since there's no latency value to size it by but the outage still
-    // needs to be visible.
+    // One bar per sample (or, once history exceeds 240 points, per bucket)
+    // rather than a connected line, so gaps read as missing bars instead of
+    // an interpolated slope. A sample with any packet loss (even a
+    // resolvable rtt alongside partial loss) gets a red bar; total loss
+    // with no rtt at all gets a full-height red bar, since there's no
+    // latency value to size it by but the outage still needs to be visible.
     var bars = "";
     for (var i = 0; i < count; i++) {
-      var v = rttValues[i];
-      var hasLoss = typeof lossValues[i] === "number" && lossValues[i] > 0;
+      var v = bucketRtt[i];
+      var hasLoss = typeof bucketLoss[i] === "number" && bucketLoss[i] > 0;
       var x = pad + i * slot + (slot - barWidth) / 2;
       var yTop, barColor;
 

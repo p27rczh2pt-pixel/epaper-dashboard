@@ -23,10 +23,11 @@ class Config:
     # Ping latency/loss history, for the Network page's rolling chart (see
     # app/services/ping_history.py). Sampled once per dashboard background
     # refresh (60s, see dashboard.html) rather than on a fixed schedule —
-    # there's no separate poller process anymore, so 60 samples covers
-    # roughly the past hour AS LONG AS the dashboard page stays open and
-    # polling; history stalls (doesn't backfill) while nothing is viewing it.
-    NETWORK_PING_HISTORY_SIZE = int(os.environ.get("NETWORK_PING_HISTORY_SIZE", "60"))
+    # there's no separate poller process anymore, so 1440 samples covers
+    # roughly the past 24 hours AS LONG AS the dashboard page stays open and
+    # polling; history stalls (doesn't backfill) while nothing is viewing it,
+    # and resets on a service restart (in-memory only, see ping_history.py).
+    NETWORK_PING_HISTORY_SIZE = int(os.environ.get("NETWORK_PING_HISTORY_SIZE", "1440"))
 
     # ip-api.com's free tier (~45 req/min, no key) — swapped from ipapi.co,
     # whose free daily quota was getting exhausted and 429ing. No HTTPS on
