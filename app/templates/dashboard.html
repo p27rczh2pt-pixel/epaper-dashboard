@@ -24,6 +24,7 @@
 
     --accent-pihole: #ff7a70;
     --accent-network: #4da3ff;
+    --accent-ping: #f5c518;
     --accent-pihole-host: #5eead4;
     --accent-dockzero: #f0a868;
     --accent-devices: #b794f6;
@@ -821,7 +822,7 @@
       }
 
       var pingHistory = data.ping_history || {};
-      renderPingChart($("ping-history-chart"), pingHistory.rtt_avg_ms, pingHistory.packet_loss_percent, "#4da3ff");
+      renderPingChart($("ping-history-chart"), pingHistory.rtt_avg_ms, pingHistory.packet_loss_percent, "var(--accent-ping)");
     }).catch(function (err) {
       setPanelError("network", err.message);
     });
