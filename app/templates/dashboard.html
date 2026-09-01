@@ -121,6 +121,17 @@
     font-weight: 700;
   }
 
+  .page-title h2.title-pihole-network {
+    background: linear-gradient(90deg, var(--accent-pihole), var(--accent-network));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .page-title h2.title-devices {
+    color: var(--accent-devices);
+  }
+
   .status-dot {
     width: 10px;
     height: 10px;
@@ -348,7 +359,7 @@
     <div class="page-title">
       <span class="icon icon-pihole"></span>
       <span class="icon icon-globe"></span>
-      <h2>Pi-hole &amp; Network</h2>
+      <h2 class="title-pihole-network">Pi-hole &amp; Network</h2>
       <span class="status-dot" id="pihole-status"></span>
       <span class="status-dot" id="network-status"></span>
     </div>
@@ -452,7 +463,7 @@
   <section class="page" id="page-devices">
     <div class="page-title">
       <span class="icon icon-devices"></span>
-      <h2>Devices</h2>
+      <h2 class="title-devices">Devices</h2>
       <span class="status-dot" id="devices-status"></span>
     </div>
     <div class="error-message" id="devices-error" hidden></div>
