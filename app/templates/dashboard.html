@@ -652,21 +652,18 @@
     setHidden(emptyId, true);
     setHidden("ping-history-summary", false);
 
-    var width = 600, height = 140, pad = 8;
+    var width = 600, height = 140, pad = 8, axisW = 28;
     svg.setAttribute("viewBox", "0 0 " + width + " " + height);
 
     var rawLo = Math.min.apply(null, numeric);
     var rawHi = Math.max.apply(null, numeric);
-    var lo = rawLo, hi = rawHi;
-    var floorRange = 10.0;
-    if (hi - lo < floorRange) {
-      var mid = (hi + lo) / 2;
-      lo = mid - floorRange / 2;
-      hi = mid + floorRange / 2;
-    }
-    lo = Math.max(0, lo);
+    // Gauge always starts at 0ms with fixed 5ms ticks, rather than a
+    // floating baseline, so the scale reads consistently run to run.
+    var lo = 0;
+    var hi = Math.max(10, Math.ceil(rawHi / 5) * 5);
 
-    var innerW = width - pad * 2, innerH = height - pad * 2;
+    var leftPad = pad + axisW;
+    var innerW = width - leftPad - pad, innerH = height - pad * 2;
     var bucketed = bucketPingData(rttValues, lossValues, 240);
     var bucketRtt = bucketed.rtt, bucketLoss = bucketed.loss;
     var count = bucketRtt.length;
@@ -676,6 +673,15 @@
     function barTop(v) {
       var frac = hi === lo ? 0.5 : (v - lo) / (hi - lo);
       return pad + innerH - frac * innerH;
+    }
+
+    var axis = "";
+    for (var tick = 0; tick <= hi; tick += 5) {
+      var tickY = barTop(tick);
+      axis += '<line x1="' + leftPad.toFixed(1) + '" y1="' + tickY.toFixed(1) + '" x2="' + (width - pad).toFixed(1) +
+        '" y2="' + tickY.toFixed(1) + '" stroke="var(--card-border)" stroke-width="1" />';
+      axis += '<text x="' + (leftPad - 6).toFixed(1) + '" y="' + (tickY + 3).toFixed(1) +
+        '" text-anchor="end" font-size="9" fill="var(--ink-dim)">' + tick + '</text>';
     }
 
     // One bar per sample (or, once history exceeds 240 points, per bucket)
@@ -688,7 +694,7 @@
     for (var i = 0; i < count; i++) {
       var v = bucketRtt[i];
       var hasLoss = typeof bucketLoss[i] === "number" && bucketLoss[i] > 0;
-      var x = pad + i * slot + (slot - barWidth) / 2;
+      var x = leftPad + i * slot + (slot - barWidth) / 2;
       var yTop, barColor;
 
       if (typeof v === "number") {
@@ -706,7 +712,7 @@
         '" height="' + barHeight.toFixed(1) + '" rx="1.5" fill="' + barColor + '" />';
     }
 
-    svg.innerHTML = bars;
+    svg.innerHTML = axis + bars;
 
     var lastRaw = rttValues[rttValues.length - 1];
     var nowLabel = typeof lastRaw === "number" ? lastRaw.toFixed(1) + " ms" : "no reply";
